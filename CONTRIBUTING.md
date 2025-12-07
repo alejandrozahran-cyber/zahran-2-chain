@@ -1,18 +1,27 @@
 # Contributing to NUSA Chain
 
-Terima kasih mau berkontribusi! 🎉
+Thank you for contributing!  🎉
 
-## Cara Kontribusi
+## How to Contribute
 
-1. Fork repository
-2. Buat branch baru: git checkout -b feature/nama-fitur
-3. Commit: git commit -m "Add feature"
-4. Push & create PR
+1. **Fork** the repository
+2. **Create** a feature branch
+3. **Commit** your changes
+4. **Push** and open a Pull Request
+
+## Development Setup
+
+See [README.md](README. md#-quick-start) for setup instructions.
 
 ## Code Style
-- Go: gofmt standard
-- Python: PEP 8
-- Rust: rustfmt
 
-**Contributors get NUSA tokens* 🚀
+- **Go**: Use `gofmt`
+- **Rust**: Use `cargo fmt`
+- **Python**: Follow PEP 8
 
+## Testing
+
+```bash
+go test ./...
+cargo test
+pytest
