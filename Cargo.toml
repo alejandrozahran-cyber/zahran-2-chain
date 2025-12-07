@@ -1,6 +1,6 @@
 [package]
 name = "nusa-chain"
-version = "1. 0.0"
+version = "1.0.0"
 edition = "2021"
 
 [dependencies]
@@ -11,6 +11,7 @@ serde_json = "1.0"
 sha2 = "0.10"
 chrono = "0.4"
 rayon = "1.8"
+hex = "0.4"
 
 [[bin]]
 name = "nusa-node"

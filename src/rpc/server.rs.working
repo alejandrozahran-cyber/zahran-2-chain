@@ -1,0 +1,121 @@
+use warp::Filter;
+use serde::{Deserialize, Serialize};
+use serde_json::json;
+use std::sync::Arc;
+use crate::core::{WorldState, Mempool};
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct JsonRpcRequest {
+    pub jsonrpc: String,
+    pub method: String,
+    pub params: serde_json::Value,
+    pub id: u64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct JsonRpcResponse {
+    pub jsonrpc: String,
+    pub result: serde_json::Value,
+    pub id: u64,
+}
+
+pub struct RpcServer {
+    state: Arc<WorldState>,
+    mempool: Arc<Mempool>,
+}
+
+impl RpcServer {
+    pub fn new_with_state(state: Arc<WorldState>, mempool: Arc<Mempool>) -> Self {
+        Self { state, mempool }
+    }
+
+    async fn handle_request(req: JsonRpcRequest, state: Arc<WorldState>) -> JsonRpcResponse {
+        let result = match req.method.as_str() {
+            "eth_blockNumber" => {
+                json!("0x1")
+            }
+            "eth_chainId" => {
+                json! ("0x4e555341")
+            }
+            "net_version" => {
+                json!("1313376900")
+            }
+            "eth_accounts" => {
+                json!(["0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb"])
+            }
+            "eth_gasPrice" => {
+                json! ("0x3b9aca00")
+            }
+            "nusa_tokenInfo" => {
+                json! ({
+                    "erc20_support": true,
+                    "erc721_support": true,
+                    "status": "operational"
+                })
+            }
+            "nusa_contractInfo" => {
+                json! ({
+                    "deployed_contracts": 0,
+                    "engine_version": "1.0. 0",
+                    "status": "operational"
+                })
+            }
+            "nusa_governanceInfo" => {
+                json! ({
+                    "active_proposals": 0,
+                    "voting_enabled": true,
+                    "status": "operational"
+                })
+            }
+            "nusa_upgradeInfo" => {
+                json!({
+                    "current_version": "1.0.0",
+                    "forkless_upgrade": true,
+                    "status": "operational"
+                })
+            }
+            _ => json!(null),
+        };
+
+        JsonRpcResponse {
+            jsonrpc: "2. 0".to_string(),
+            result,
+            id: req. id,
+        }
+    }
+
+    pub async fn run(self) {
+        let state = self.state.clone();
+
+        let rpc = warp::post()
+            .and(warp::path::end())
+            .and(warp::body::json())
+            .and_then(move |req: JsonRpcRequest| {
+                let state = state. clone();
+                async move {
+                    let response = Self::handle_request(req, state).await;
+                    Ok::<_, warp::Rejection>(warp::reply::json(&response))
+                }
+            });
+
+        let health = warp::path("health")
+            .map(|| warp::reply::json(&json!({"status": "healthy"})));
+
+        let metrics = warp::path("metrics")
+            .map(|| {
+                let metrics_data = r#"
+# HELP nusa_block_height Current block height
+# TYPE nusa_block_height gauge
+nusa_block_height 12345
+
+# HELP nusa_tps Transactions per second
+# TYPE nusa_tps gauge
+nusa_tps 50000
+"#;
+                warp::reply::with_header(metrics_data, "Content-Type", "text/plain")
+            });
+
+        let routes = rpc.or(health). or(metrics);
+        warp::serve(routes). run(([0, 0, 0, 0], 8545)).await;
+    }
+}

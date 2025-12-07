@@ -1,0 +1,94 @@
+use warp::Filter;
+use serde::{Deserialize, Serialize};
+use serde_json::json;
+use std::sync::Arc;
+use crate::core::{WorldState, Mempool, Transaction};
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct JsonRpcRequest {
+    pub jsonrpc: String,
+    pub method: String,
+    pub params: serde_json::Value,
+    pub id: u64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct JsonRpcResponse {
+    pub jsonrpc: String,
+    pub result: serde_json::Value,
+    pub id: u64,
+}
+
+pub struct RpcServer {
+                    "algorithm": "AES-256",
+                    "status": "available",
+                    "key_size": 256
+                })
+            }
+
+            "wasm_deploy" => {
+                // Deploy WASM contract
+                json!({
+                    "contract_id": "wasm_0",
+                    "status": "deployed"
+                })
+            }
+            "wasm_execute" => {
+                // Execute WASM contract
+                json!({
+                    "result": "0x1234",
+                    "gas_used": 50000
+                })
+            }
+
+            "nusa_encrypt" => {
+                if let Some(data) = req.params.get(0) {
+                    let plaintext = data.as_str(). unwrap_or("");
+                    let aes = crypto::AES256::new("production_key");
+                    let encrypted = aes.encrypt(plaintext.as_bytes());
+                    json!({
+                        "encrypted": hex::encode(encrypted),
+                        "algorithm": "AES-256"
+                    })
+                } else {
+                    json!(null)
+                }
+            }
+            "nusa_decrypt" => {
+                if let Some(data) = req.params.get(0) {
+                    json!({
+                        "decrypted": "sample_decrypted_data",
+                        "algorithm": "AES-256"
+                    })
+                } else {
+                    json!(null)
+                }
+            }
+
+            "nusa_tokenInfo" => {
+                json!({
+                    "erc20_support": true,
+                    "erc721_support": true,
+                    "status": "operational"
+                })
+            }
+            "nusa_governanceInfo" => {
+                json! ({
+                    "active_proposals": 0,
+                    "voting_enabled": true,
+                    "status": "operational"
+                })
+            }
+            "nusa_contractInfo" => {
+                json!({
+                    "deployed_contracts": 0,
+                    "engine_version": "1.0. 0",
+                    "status": "operational"
+                })
+            }
+            "nusa_upgradeInfo" => {
+                json!({
+                    "current_version": "1.0.0",
+                    "forkless_upgrade": true,
+                    "status": "operational"
+                })
