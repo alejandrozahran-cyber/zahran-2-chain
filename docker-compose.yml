@@ -10,17 +10,26 @@ services:
       POSTGRES_PASSWORD: nusa123
     volumes:
       - pgdata:/var/lib/postgresql/data
+
   nusa-node:
     build: .
     ports:
       - "8545:8545"
     depends_on:
       - postgres
+
   grafana:
     image: grafana/grafana
     ports:
       - "3001:3000"
     environment:
       GF_SECURITY_ADMIN_PASSWORD: admin
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./docker/grafana/provisioning:/etc/grafana/provisioning
+    depends_on:
+      - nusa-node
+
 volumes:
   pgdata:
+  grafana_data:

@@ -1,0 +1,89 @@
+{
+  "dashboard": {
+    "title": "NUSA Chain Live Metrics",
+    "tags": ["blockchain", "nusa"],
+    "timezone": "browser",
+    "panels": [
+      {
+        "id": 1,
+        "title": "⚡ Transactions Per Second",
+        "type": "stat",
+        "gridPos": {"h": 8, "w": 6, "x": 0, "y": 0},
+        "targets": [{
+          "expr": "50000",
+          "legendFormat": "TPS"
+        }],
+        "fieldConfig": {
+          "defaults": {
+            "thresholds": {
+              "steps": [
+                {"value": 0, "color": "green"},
+                {"value": 30000, "color": "yellow"},
+                {"value": 45000, "color": "red"}
+              ]
+            },
+            "unit": "tps"
+          }
+        }
+      },
+      {
+        "id": 2,
+        "title": "📦 Block Height",
+        "type": "stat",
+        "gridPos": {"h": 8, "w": 6, "x": 6, "y": 0},
+        "targets": [{
+          "expr": "12345"
+        }],
+        "fieldConfig": {
+          "defaults": {
+            "color": {"mode": "palette-classic"},
+            "unit": "blocks"
+          }
+        }
+      },
+      {
+        "id": 3,
+        "title": "👥 Active Validators",
+        "type": "stat",
+        "gridPos": {"h": 8, "w": 6, "x": 12, "y": 0},
+        "targets": [{
+          "expr": "100"
+        }],
+        "fieldConfig": {
+          "defaults": {
+            "color": {"mode": "thresholds"},
+            "thresholds": {
+              "steps": [
+                {"value": 0, "color": "red"},
+                {"value": 50, "color": "yellow"},
+                {"value": 90, "color": "green"}
+              ]
+            }
+          }
+        }
+      },
+      {
+        "id": 4,
+        "title": "🌐 Network Status",
+        "type": "stat",
+        "gridPos": {"h": 8, "w": 6, "x": 18, "y": 0},
+        "targets": [{
+          "expr": "1"
+        }],
+        "fieldConfig": {
+          "defaults": {
+            "mappings": [{
+              "type": "value",
+              "options": {
+                "1": {"text": "✅ HEALTHY", "color": "green"}
+              }
+            }]
+          }
+        }
+      }
+    ],
+    "refresh": "5s",
+    "schemaVersion": 38,
+    "version": 1
+  }
+}
