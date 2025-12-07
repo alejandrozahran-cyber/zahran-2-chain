@@ -1,0 +1,42 @@
+version: '3.8'
+
+services:
+  nusa-l1:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile. l1
+    container_name: nusa-l1-node
+    ports:
+      - "8080:8080"
+      - "4001:4001"
+    environment:
+      - NODE_ENV=production
+      - LOG_LEVEL=info
+    networks:
+      - nusa-network
+    restart: unless-stopped
+    volumes:
+      - l1-data:/app/data
+
+  nusa-l3:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.l3
+    container_name: nusa-l3-ai
+    ports:
+      - "8000:8000"
+    environment:
+      - PYTHONUNBUFFERED=1
+      - L1_RPC_URL=http://nusa-l1:8080
+    depends_on:
+      - nusa-l1
+    networks:
+      - nusa-network
+    restart: unless-stopped
+
+networks:
+  nusa-network:
+    driver: bridge
+
+volumes:
+  l1-data:
