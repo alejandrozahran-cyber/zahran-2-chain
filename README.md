@@ -989,3 +989,5 @@ docker-compose up -d
 # Test RPC
 curl http://localhost:8545
 </div>
+## 📊 Monitoring Dashboard
+
