@@ -18,19 +18,17 @@ Cargo.lock
 # Python
 __pycache__/
 *.py[cod]
-*$py. class
-*.so
-. Python
+*. so
+.Python
 env/
 venv/
-. env
+.env
 
 # IDEs
 .vscode/
-. idea/
+.idea/
 *. swp
 *.swo
-*~
 
 # OS
 .DS_Store
@@ -44,4 +42,4 @@ data/
 # Secrets
 *. key
 *.pem
-config.local. yaml
+config. local. yaml
