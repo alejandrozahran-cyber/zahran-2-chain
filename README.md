@@ -78,7 +78,189 @@
 - On-chain voting system
 - Proposal creation & execution
 - Quadratic voting support
-- Treasury management
+
+---
+
+## 🔥 Try It Now!
+
+### Quick Start with Docker
+
+```bash
+# Clone and start
+git clone https://github. com/alejandrozahran-cyber/zahran-2-chain. git
+cd zahran-2-chain
+docker-compose up -d
+
+# Test RPC
+curl http://localhost:8545
+---
+
+## 🔥 Try It Now!
+
+### Quick Start with Docker
+
+```bash
+# Clone and start
+git clone https://github. com/alejandrozahran-cyber/zahran-2-chain. git
+cd zahran-2-chain
+docker-compose up -d
+
+# Test RPC
+curl http://localhost:8545
+---
+
+## 🔥 Try It Now!
+
+### Quick Start with Docker
+
+```bash
+# Clone and start
+git clone https://github. com/alejandrozahran-cyber/zahran-2-chain. git
+cd zahran-2-chain
+docker-compose up -d
+
+# Test RPC
+curl http://localhost:8545
+---
+
+## 🔥 Try It Now!
+
+### Quick Start with Docker
+
+```bash
+# Clone and start
+git clone https://github. com/alejandrozahran-cyber/zahran-2-chain. git
+cd zahran-2-chain
+docker-compose up -d
+
+# Test RPC
+curl http://localhost:8545
+---
+
+## 🔥 Try It Now!
+
+### Quick Start with Docker
+
+```bash
+# Clone and start
+git clone https://github. com/alejandrozahran-cyber/zahran-2-chain. git
+cd zahran-2-chain
+docker-compose up -d
+
+# Test RPC
+curl http://localhost:8545
+---
+
+## 🔥 Try It Now!
+
+### Quick Start with Docker
+
+```bash
+# Clone and start
+git clone https://github. com/alejandrozahran-cyber/zahran-2-chain. git
+cd zahran-2-chain
+docker-compose up -d
+
+# Test RPC
+curl http://localhost:8545
+---
+
+## 🔥 Try It Now!
+
+### Quick Start with Docker
+
+```bash
+# Clone and start
+git clone https://github. com/alejandrozahran-cyber/zahran-2-chain. git
+cd zahran-2-chain
+docker-compose up -d
+
+# Test RPC
+curl http://localhost:8545
+---
+
+## 🔥 Try It Now!
+
+### Quick Start with Docker
+
+```bash
+# Clone and start
+git clone https://github. com/alejandrozahran-cyber/zahran-2-chain. git
+cd zahran-2-chain
+docker-compose up -d
+
+# Test RPC
+curl http://localhost:8545
+---
+
+## 🔥 Try It Now!
+
+### Quick Start with Docker
+
+```bash
+# Clone and start
+git clone https://github. com/alejandrozahran-cyber/zahran-2-chain. git
+cd zahran-2-chain
+docker-compose up -d
+
+# Test RPC
+curl http://localhost:8545
+---
+
+## 🔥 Try It Now!
+
+### Quick Start with Docker
+
+```bash
+# Clone and start
+git clone https://github. com/alejandrozahran-cyber/zahran-2-chain. git
+cd zahran-2-chain
+docker-compose up -d
+
+# Test RPC
+curl http://localhost:8545
+---
+
+## 🔥 Try It Now!
+
+### Quick Start with Docker
+
+```bash
+# Clone and start
+git clone https://github. com/alejandrozahran-cyber/zahran-2-chain. git
+cd zahran-2-chain
+docker-compose up -d
+
+# Test RPC
+curl http://localhost:8545
+---
+
+## 🔥 Try It Now!
+
+### Quick Start with Docker
+
+```bash
+# Clone and start
+git clone https://github. com/alejandrozahran-cyber/zahran-2-chain. git
+cd zahran-2-chain
+docker-compose up -d
+
+# Test RPC
+curl http://localhost:8545
+---
+
+## 🔥 Try It Now!
+
+### Quick Start with Docker
+
+```bash
+# Clone and start
+git clone https://github. com/alejandrozahran-cyber/zahran-2-chain. git
+cd zahran-2-chain
+docker-compose up -d
+
+# Test RPC
+curl http://localhost:8545- Treasury management
 </details>
 
 <details>
@@ -792,4 +974,18 @@ NUSA Chain is experimental software. Use at your own risk. This is not financial
 
 **🚀 The Future of Blockchain is Here.  Join Us!  🚀**
 
+---
+
+## 🔥 Try It Now!
+
+### Quick Start with Docker
+
+```bash
+# Clone and start
+git clone https://github. com/alejandrozahran-cyber/zahran-2-chain. git
+cd zahran-2-chain
+docker-compose up -d
+
+# Test RPC
+curl http://localhost:8545
 </div>
