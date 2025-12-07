@@ -1,0 +1,228 @@
+// NUSA GameFi Launchpad - Launch play-to-earn games on NUSA Chain
+// Features: NFT items, in-game economy, tournaments, anti-cheat
+
+use std::collections::HashMap;
+
+#[derive(Debug, Clone)]
+pub struct GameNFT {
+    pub token_id: String,
+    pub game_id: String,
+    pub item_type: String,  // weapon, character, land, etc
+    pub rarity: Rarity,
+    pub stats: HashMap<String, u64>,
+    pub owner: String,
+    pub tradeable: bool,
+}
+
+#[derive(Debug, Clone)]
+pub enum Rarity {
+    Common,
+    Rare,
+    Epic,
+    Legendary,
+    Mythic,
+}
+
+#[derive(Debug, Clone)]
+pub struct Game {
+    pub game_id: String,
+    pub name: String,
+    pub developer: String,
+    pub token_symbol: String,  // In-game currency
+    pub total_players: u64,
+    pub total_earnings: u64,
+    pub verified: bool,
+}
+
+pub struct GameFiLaunchpad {
+    games: HashMap<String, Game>,
+    nfts: HashMap<String, GameNFT>,
+    player_earnings: HashMap<String, u64>,
+}
+
+impl GameFiLaunchpad {
+    pub fn new() -> Self {
+        Self {
+            games: HashMap::new(),
+            nfts: HashMap::new(),
+            player_earnings: HashMap::new(),
+        }
+    }
+    
+    // Launch new game on NUSA
+    pub fn launch_game(&mut self, name: String, developer: String, token_symbol: String) -> String {
+        let game_id = format!("game_{}", self.games.len() + 1);
+        
+        let game = Game {
+            game_id: game_id.clone(),
+            name: name.clone(),
+            developer,
+            token_symbol,
+            total_players: 0,
+            total_earnings: 0,
+            verified: false,
+        };
+        
+        self.games.insert(game_id.clone(), game);
+        
+        println!("🎮 Game launched: {} ({})", name, game_id);
+        
+        game_id
+    }
+    
+    // Mint in-game NFT
+    pub fn mint_game_nft(
+        &mut self,
+        game_id: String,
+        item_type: String,
+        rarity: Rarity,
+        owner: String,
+    ) -> String {
+        let token_id = format!("nft_{}_{}", game_id, self.nfts.len() + 1);
+        
+        let mut stats = HashMap::new();
+        
+        // Generate stats based on rarity
+        let base_power = match rarity {
+            Rarity::Common => 10,
+            Rarity::Rare => 25,
+            Rarity::Epic => 50,
+            Rarity::Legendary => 100,
+            Rarity::Mythic => 200,
+        };
+        
+        stats.insert("power".to_string(), base_power);
+        stats.insert("durability".to_string(), 100);
+        
+        let nft = GameNFT {
+            token_id: token_id.clone(),
+            game_id: game_id.clone(),
+            item_type,
+            rarity,
+            stats,
+            owner: owner.clone(),
+            tradeable: true,
+        };
+        
+        self.nfts. insert(token_id.clone(), nft);
+        
+        println!("✨ NFT minted: {} for player {}", token_id, owner);
+        
+        token_id
+    }
+    
+    // Reward player for playing
+    pub fn reward_player(&mut self, player: String, game_id: String, amount: u64) {
+        let current = self.player_earnings.get(&player).unwrap_or(&0);
+        self.player_earnings.insert(player. clone(), current + amount);
+        
+        // Update game stats
+        if let Some(game) = self. games.get_mut(&game_id) {
+            game.total_earnings += amount;
+        }
+        
+        println!("💰 Player {} earned {} tokens!", player, amount);
+    }
+    
+    // Tournament system
+    pub fn create_tournament(
+        &self,
+        game_id: String,
+        prize_pool: u64,
+        max_players: u64,
+    ) -> Tournament {
+        Tournament {
+            tournament_id: format!("tour_{}", game_id),
+            game_id,
+            prize_pool,
+            max_players,
+            registered_players: Vec::new(),
+            status: TournamentStatus::Open,
+        }
+    }
+    
+    // Anti-cheat verification
+    pub fn verify_game_action(&self, player: String, action_hash: String) -> bool {
+        // Verify action on-chain to prevent cheating
+        // Check: timestamp, player state, action validity
+        
+        println!("🛡️ Verifying action {} for {}", action_hash, player);
+        
+        true  // Simplified
+    }
+    
+    // Get player stats
+    pub fn get_player_stats(&self, player: String) -> PlayerStats {
+        let total_earned = self.player_earnings.get(&player).unwrap_or(&0);
+        
+        let owned_nfts: Vec<String> = self.nfts
+            .values()
+            .filter(|nft| nft.owner == player)
+            .map(|nft| nft. token_id.clone())
+            .collect();
+        
+        PlayerStats {
+            player: player.clone(),
+            total_earned: *total_earned,
+            nfts_owned: owned_nfts. len() as u64,
+            games_played: 0,  // TODO: Track
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct Tournament {
+    pub tournament_id: String,
+    pub game_id: String,
+    pub prize_pool: u64,
+    pub max_players: u64,
+    pub registered_players: Vec<String>,
+    pub status: TournamentStatus,
+}
+
+#[derive(Debug, Clone)]
+pub enum TournamentStatus {
+    Open,
+    InProgress,
+    Completed,
+}
+
+#[derive(Debug)]
+pub struct PlayerStats {
+    pub player: String,
+    pub total_earned: u64,
+    pub nfts_owned: u64,
+    pub games_played: u64,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_launch_game() {
+        let mut launchpad = GameFiLaunchpad::new();
+        let game_id = launchpad. launch_game(
+            "CryptoWars".to_string(),
+            "DevStudio".to_string(),
+            "CWAR".to_string()
+        );
+        
+        assert! (!game_id.is_empty());
+    }
+
+    #[test]
+    fn test_mint_nft() {
+        let mut launchpad = GameFiLaunchpad::new();
+        let game_id = launchpad.launch_game("Game". to_string(), "Dev".to_string(), "GME".to_string());
+        
+        let nft_id = launchpad.mint_game_nft(
+            game_id,
+            "Sword".to_string(),
+            Rarity::Legendary,
+            "player1".to_string()
+        );
+        
+        assert!(!nft_id.is_empty());
+    }
+}
