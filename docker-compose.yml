@@ -1,35 +1,55 @@
-version: '3.8'
 services:
-  postgres:
-    image: postgres:15-alpine
-    ports:
-      - "5432:5432"
-    environment:
-      POSTGRES_DB: nusa_chain
-      POSTGRES_USER: nusa
-      POSTGRES_PASSWORD: nusa123
-    volumes:
-      - pgdata:/var/lib/postgresql/data
-
   nusa-node:
-    build: .
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    container_name: nusa-node
     ports:
       - "8545:8545"
-    depends_on:
-      - postgres
+      - "8546:8546"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8545/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+    restart: unless-stopped
+    networks:
+      - nusa-network
+
+  postgres:
+    image: postgres:15-alpine
+    container_name: nusa-postgres
+    environment:
+      POSTGRES_USER: nusa
+      POSTGRES_PASSWORD: nusa_secure_password
+      POSTGRES_DB: nusa_chain
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+    networks:
+      - nusa-network
 
   grafana:
-    image: grafana/grafana
+    image: grafana/grafana:latest
+    container_name: nusa-grafana
     ports:
       - "3001:3000"
     environment:
-      GF_SECURITY_ADMIN_PASSWORD: admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_USERS_ALLOW_SIGN_UP=false
     volumes:
-      - grafana_data:/var/lib/grafana
       - ./docker/grafana/provisioning:/etc/grafana/provisioning
-    depends_on:
-      - nusa-node
+      - grafana_data:/var/lib/grafana
+    restart: unless-stopped
+    networks:
+      - nusa-network
+
+networks:
+  nusa-network:
+    driver: bridge
 
 volumes:
-  pgdata:
+  postgres_data:
   grafana_data:
