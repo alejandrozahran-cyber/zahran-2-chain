@@ -22,8 +22,30 @@
   "links": [],
   "panels": [
     {
+      "datasource": {
+        "uid": "grafana"
+      },
       "fieldConfig": {
-        "defaults": {},
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "noValue": "50000",
+          "thresholds": {
+            "mode": "percentage",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
         "overrides": []
       },
       "gridPos": {
@@ -34,17 +56,33 @@
       },
       "id": 1,
       "options": {
-        "code": {
-          "language": "plaintext",
-          "showLineNumbers": false,
-          "showMiniMap": false
+        "colorMode": "background_solid",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
         },
-        "content": "# 🌌 NUSA CHAIN\n\n## ⚡ PERFORMA\n- **TPS:** 50,000\n- **Block:** 12,345  \n- **Validators:** 100\n\n## ✅ STATUS\n**HEALTHY** ✅\n\n## 🚀 FITUR\n- Multi-VM Support\n- Quantum-Safe\n- MEV Protection\n- 50K TPS",
-        "mode": "markdown"
+        "showPercentChange": false,
+        "text": {
+          "valueSize": 80
+        },
+        "textMode": "auto",
+        "wideLayout": true
       },
       "pluginVersion": "12.3.0",
-      "title": "New panel",
-      "type": "text"
+      "targets": [
+        {
+          "refId": "A"
+        }
+      ],
+      "title": "⚡ Transactions Per Second",
+      "type": "stat"
     }
   ],
   "preload": false,
@@ -62,5 +100,5 @@
   "timezone": "",
   "title": "NUSA Chain Metrics",
   "uid": "nusa-main",
-  "version": 2
+  "version": 3
 }
