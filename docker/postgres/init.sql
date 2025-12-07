@@ -1,0 +1,5 @@
+CREATE TABLE IF NOT EXISTS blocks (
+    height BIGINT PRIMARY KEY,
+    hash VARCHAR(66) NOT NULL,
+    timestamp TIMESTAMP NOT NULL
+);

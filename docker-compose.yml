@@ -1,42 +1,26 @@
 version: '3.8'
-
 services:
-  nusa-l1:
-    build:
-      context: .
-      dockerfile: docker/Dockerfile. l1
-    container_name: nusa-l1-node
+  postgres:
+    image: postgres:15-alpine
     ports:
-      - "8080:8080"
-      - "4001:4001"
+      - "5432:5432"
     environment:
-      - NODE_ENV=production
-      - LOG_LEVEL=info
-    networks:
-      - nusa-network
-    restart: unless-stopped
+      POSTGRES_DB: nusa_chain
+      POSTGRES_USER: nusa
+      POSTGRES_PASSWORD: nusa123
     volumes:
-      - l1-data:/app/data
-
-  nusa-l3:
-    build:
-      context: .
-      dockerfile: docker/Dockerfile.l3
-    container_name: nusa-l3-ai
+      - pgdata:/var/lib/postgresql/data
+  nusa-node:
+    build: .
     ports:
-      - "8000:8000"
-    environment:
-      - PYTHONUNBUFFERED=1
-      - L1_RPC_URL=http://nusa-l1:8080
+      - "8545:8545"
     depends_on:
-      - nusa-l1
-    networks:
-      - nusa-network
-    restart: unless-stopped
-
-networks:
-  nusa-network:
-    driver: bridge
-
+      - postgres
+  grafana:
+    image: grafana/grafana
+    ports:
+      - "3001:3000"
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: admin
 volumes:
-  l1-data:
+  pgdata:
