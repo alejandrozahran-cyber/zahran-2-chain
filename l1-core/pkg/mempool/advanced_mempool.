@@ -1,0 +1,408 @@
+package mempool
+
+import (
+	"container/heap"
+	"crypto/sha256"
+	"fmt"
+	"time"
+)
+
+// Advanced Mempool Design
+// Features: Priority queue, spam prevention, gossip optimization, RBF
+
+type Mempool struct {
+	Transactions     map[string]*PendingTransaction
+	PriorityQueue    *PriorityQueue
+	MaxSize          int
+	MaxTxPerAccount  int
+	MinGasPrice      uint64
+	SpamFilter       *SpamFilter
+	GossipProtocol   *GossipProtocol
+	TotalReceived    uint64
+	TotalDropped     uint64
+	TotalReplaced    uint64
+}
+
+type PendingTransaction struct {
+	TxHash       string
+	From         string
+	To           string
+	Value        uint64
+	GasPrice     uint64
+	GasLimit     uint64
+	Nonce        uint64
+	Data         []byte
+	Timestamp    time. Time
+	Priority     float64
+	Size         uint64
+	Replaceable  bool // RBF enabled
+}
+
+// Priority Queue for transaction ordering
+type PriorityQueue []*PendingTransaction
+
+func (pq PriorityQueue) Len() int { return len(pq) }
+
+func (pq PriorityQueue) Less(i, j int) bool {
+	// Higher priority = higher gas price + lower nonce + older timestamp
+	return pq[i].Priority > pq[j].Priority
+}
+
+func (pq PriorityQueue) Swap(i, j int) {
+	pq[i], pq[j] = pq[j], pq[i]
+}
+
+func (pq *PriorityQueue) Push(x interface{}) {
+	*pq = append(*pq, x.(*PendingTransaction))
+}
+
+func (pq *PriorityQueue) Pop() interface{} {
+	old := *pq
+	n := len(old)
+	item := old[n-1]
+	*pq = old[0 : n-1]
+	return item
+}
+
+// Spam Filter
+type SpamFilter struct {
+	AccountTxCount   map[string]int
+	IPTxCount        map[string]int
+	BlacklistedAddr  map[string]bool
+	MaxTxPerMinute   int
+	LastCleanup      time.Time
+}
+
+// Gossip Protocol for tx propagation
+type GossipProtocol struct {
+	Peers            []string
+	MaxPeers         int
+	PropagationDelay time.Duration
+	Bandwidth        uint64
+	TxsSent          uint64
+	TxsReceived      uint64
+}
+
+func NewMempool() *Mempool {
+	pq := make(PriorityQueue, 0)
+	heap.Init(&pq)
+
+	return &Mempool{
+		Transactions:    make(map[string]*PendingTransaction),
+		PriorityQueue:   &pq,
+		MaxSize:         50000, // 50K transactions
+		MaxTxPerAccount: 100,
+		MinGasPrice:     1000, // Minimum gas price
+		SpamFilter:      NewSpamFilter(),
+		GossipProtocol:  NewGossipProtocol(),
+		TotalReceived:   0,
+		TotalDropped:    0,
+		TotalReplaced:   0,
+	}
+}
+
+func NewSpamFilter() *SpamFilter {
+	return &SpamFilter{
+		AccountTxCount:  make(map[string]int),
+		IPTxCount:       make(map[string]int),
+		BlacklistedAddr: make(map[string]bool),
+		MaxTxPerMinute:  20,
+		LastCleanup:     time.Now(),
+	}
+}
+
+func NewGossipProtocol() *GossipProtocol {
+	return &GossipProtocol{
+		Peers:            make([]string, 0),
+		MaxPeers:         50,
+		PropagationDelay: 100 * time.Millisecond,
+		Bandwidth:        10 * 1024 * 1024, // 10 MB/s
+		TxsSent:          0,
+		TxsReceived:      0,
+	}
+}
+
+// Add transaction to mempool
+func (mp *Mempool) AddTransaction(tx *PendingTransaction) (bool, string) {
+	mp.TotalReceived++
+
+	// 1. Spam prevention
+	if mp.SpamFilter.IsSpam(tx) {
+		mp. TotalDropped++
+		return false, "spam detected"
+	}
+
+	// 2. Validate transaction
+	if valid, reason := mp.ValidateTransaction(tx); !valid {
+		mp. TotalDropped++
+		return false, reason
+	}
+
+	// 3. Check mempool capacity
+	if len(mp. Transactions) >= mp.MaxSize {
+		// Evict lowest priority transaction
+		if ! mp.evictLowestPriority(tx) {
+			mp.TotalDropped++
+			return false, "mempool full, tx priority too low"
+		}
+	}
+
+	// 4. Check for Replace-By-Fee (RBF)
+	if existing, exists := mp.Transactions[tx.TxHash]; exists {
+		if ! mp.handleRBF(existing, tx) {
+			return false, "RBF failed"
+		}
+		mp.TotalReplaced++
+		return true, "transaction replaced (RBF)"
+	}
+
+	// 5. Calculate priority
+	tx.Priority = mp.calculatePriority(tx)
+
+	// 6. Add to mempool
+	mp.Transactions[tx.TxHash] = tx
+	heap.Push(mp.PriorityQueue, tx)
+
+	// 7. Gossip to peers
+	mp.GossipProtocol.BroadcastTransaction(tx)
+
+	fmt.Printf("✅ TX added to mempool: %s | Priority: %.2f | Gas: %d\n",
+		tx.TxHash[:16], tx.Priority, tx. GasPrice)
+
+	return true, "accepted"
+}
+
+// Validate transaction
+func (mp *Mempool) ValidateTransaction(tx *PendingTransaction) (bool, string) {
+	// Check gas price
+	if tx.GasPrice < mp.MinGasPrice {
+		return false, fmt.Sprintf("gas price too low: %d < %d", tx.GasPrice, mp.MinGasPrice)
+	}
+
+	// Check gas limit
+	if tx.GasLimit < 21000 || tx.GasLimit > 30000000 {
+		return false, "invalid gas limit"
+	}
+
+	// Check transaction size
+	if tx.Size > 128*1024 { // Max 128KB
+		return false, "transaction too large"
+	}
+
+	// Check nonce (simplified - production needs account state)
+	// TODO: Verify nonce is sequential
+
+	// Check signature (simplified)
+	// TODO: Verify cryptographic signature
+
+	return true, "valid"
+}
+
+// Calculate transaction priority
+func (mp *Mempool) calculatePriority(tx *PendingTransaction) float64 {
+	// Priority = (gasPrice * 0.6) + (age * 0.2) + (valueTransfer * 0.2)
+
+	gasPriceScore := float64(tx.GasPrice) / 1000000.0
+	ageScore := time.Since(tx.Timestamp). Seconds() / 60.0 // Minutes old
+	valueScore := float64(tx.Value) / 1e10
+
+	priority := (gasPriceScore * 0.6) + (ageScore * 0.2) + (valueScore * 0.2)
+
+	return priority
+}
+
+// Replace-By-Fee (RBF) logic
+func (mp *Mempool) handleRBF(existing, new *PendingTransaction) bool {
+	// Check if existing tx is replaceable
+	if ! existing.Replaceable {
+		return false
+	}
+
+	// New tx must have higher gas price (at least 10% more)
+	minGasPrice := existing.GasPrice * 110 / 100
+	if new.GasPrice < minGasPrice {
+		return false
+	}
+
+	// Must be from same account with same nonce
+	if existing. From != new.From || existing. Nonce != new.Nonce {
+		return false
+	}
+
+	// Remove old transaction
+	delete(mp.Transactions, existing. TxHash)
+
+	// Update priority queue (simplified - production needs heap update)
+	mp.rebuildPriorityQueue()
+
+	fmt.Printf("🔄 RBF: %s replaced by %s (gas: %d → %d)\n",
+		existing.TxHash[:16], new.TxHash[:16], existing.GasPrice, new.GasPrice)
+
+	return true
+}
+
+// Evict lowest priority transaction
+func (mp *Mempool) evictLowestPriority(newTx *PendingTransaction) bool {
+	if mp.PriorityQueue. Len() == 0 {
+		return false
+	}
+
+	// Peek at lowest priority tx
+	lowestPriorityTx := (*mp.PriorityQueue)[mp.PriorityQueue. Len()-1]
+
+	// Only evict if new tx has higher priority
+	if newTx.Priority <= lowestPriorityTx.Priority {
+		return false
+	}
+
+	// Remove lowest priority
+	heap.Pop(mp.PriorityQueue)
+	delete(mp.Transactions, lowestPriorityTx.TxHash)
+
+	fmt.Printf("🗑️ Evicted: %s (priority: %.2f)\n", lowestPriorityTx.TxHash[:16], lowestPriorityTx.Priority)
+
+	return true
+}
+
+// Get transactions for next block
+func (mp *Mempool) GetTransactionsForBlock(maxGas uint64) []*PendingTransaction {
+	selected := make([]*PendingTransaction, 0)
+	totalGas := uint64(0)
+
+	// Create a copy of priority queue
+	pqCopy := make(PriorityQueue, len(*mp.PriorityQueue))
+	copy(pqCopy, *mp.PriorityQueue)
+	heap.Init(&pqCopy)
+
+	// Select highest priority transactions
+	for pqCopy.Len() > 0 {
+		tx := heap.Pop(&pqCopy). (*PendingTransaction)
+
+		if totalGas+tx.GasLimit > maxGas {
+			continue // Skip if doesn't fit
+		}
+
+		selected = append(selected, tx)
+		totalGas += tx.GasLimit
+
+		if totalGas >= maxGas*9/10 { // Stop at 90% full
+			break
+		}
+	}
+
+	fmt.Printf("📦 Selected %d transactions for block (%. 2f%% full)\n",
+		len(selected), float64(totalGas)/float64(maxGas)*100)
+
+	return selected
+}
+
+// Remove mined transactions
+func (mp *Mempool) RemoveMinedTransactions(txHashes []string) {
+	for _, hash := range txHashes {
+		if tx, exists := mp.Transactions[hash]; exists {
+			delete(mp.Transactions, hash)
+
+			// Remove from priority queue
+			mp.rebuildPriorityQueue()
+
+			fmt.Printf("⛏️ Removed mined tx: %s\n", tx.TxHash[:16])
+		}
+	}
+}
+
+// Rebuild priority queue (after removals)
+func (mp *Mempool) rebuildPriorityQueue() {
+	newPQ := make(PriorityQueue, 0)
+	heap.Init(&newPQ)
+
+	for _, tx := range mp.Transactions {
+		heap.Push(&newPQ, tx)
+	}
+
+	mp. PriorityQueue = &newPQ
+}
+
+// Spam Filter methods
+func (sf *SpamFilter) IsSpam(tx *PendingTransaction) bool {
+	// Cleanup old counts every minute
+	if time.Since(sf.LastCleanup) > time.Minute {
+		sf. AccountTxCount = make(map[string]int)
+		sf.IPTxCount = make(map[string]int)
+		sf.LastCleanup = time.Now()
+	}
+
+	// Check blacklist
+	if sf.BlacklistedAddr[tx.From] {
+		return true
+	}
+
+	// Check rate limit
+	sf.AccountTxCount[tx.From]++
+	if sf.AccountTxCount[tx.From] > sf.MaxTxPerMinute {
+		sf.BlacklistedAddr[tx.From] = true
+		fmt.Printf("🚫 Address blacklisted (spam): %s\n", tx. From)
+		return true
+	}
+
+	// Check for duplicate transactions
+	// TODO: Implement duplicate detection
+
+	return false
+}
+
+// Gossip Protocol methods
+func (gp *GossipProtocol) BroadcastTransaction(tx *PendingTransaction) {
+	// Gossip to random subset of peers (sqrt(n) peers)
+	peersToSend := 7 // sqrt(50) ≈ 7
+
+	if len(gp.Peers) < peersToSend {
+		peersToSend = len(gp.Peers)
+	}
+
+	// Simulate broadcast (production: actual network send)
+	gp.TxsSent += uint64(peersToSend)
+
+	fmt.Printf("📡 Gossiped tx %s to %d peers\n", tx.TxHash[:16], peersToSend)
+}
+
+func (gp *GossipProtocol) AddPeer(peerAddr string) {
+	if len(gp.Peers) < gp.MaxPeers {
+		gp.Peers = append(gp.Peers, peerAddr)
+	}
+}
+
+// Get mempool stats
+func (mp *Mempool) GetStats() map[string]interface{} {
+	totalValue := uint64(0)
+	avgGasPrice := uint64(0)
+
+	for _, tx := range mp. Transactions {
+		totalValue += tx.Value
+		avgGasPrice += tx.GasPrice
+	}
+
+	if len(mp.Transactions) > 0 {
+		avgGasPrice /= uint64(len(mp.Transactions))
+	}
+
+	return map[string]interface{}{
+		"pending_txs":      len(mp.Transactions),
+		"max_size":         mp.MaxSize,
+		"utilization":      float64(len(mp.Transactions)) / float64(mp.MaxSize) * 100,
+		"total_received":   mp.TotalReceived,
+		"total_dropped":    mp.TotalDropped,
+		"total_replaced":   mp.TotalReplaced,
+		"avg_gas_price":    avgGasPrice,
+		"total_value":      totalValue,
+		"min_gas_price":    mp. MinGasPrice,
+		"gossip_peers":     len(mp.GossipProtocol. Peers),
+		"blacklisted":      len(mp.SpamFilter.BlacklistedAddr),
+	}
+}
+
+// Generate transaction hash
+func GenerateTxHash(from, to string, value, nonce uint64) string {
+	data := fmt.Sprintf("%s-%s-%d-%d-%d", from, to, value, nonce, time.Now().UnixNano())
+	hash := sha256.Sum256([]byte(data))
+	return fmt.Sprintf("%x", hash)
+}

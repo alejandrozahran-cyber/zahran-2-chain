@@ -1,0 +1,239 @@
+package state
+
+import (
+	"fmt"
+	"time"
+)
+
+// State Pruning & Checkpointing
+// Keep blockchain size manageable as it grows
+
+type StatePruner struct {
+	StateDB           map[string]*StateEntry
+	Checkpoints       map[uint64]*StateCheckpoint
+	PruningMode       PruningMode
+	RetentionBlocks   uint64 // Keep last N blocks
+	ArchiveNodes      []string
+	TotalPruned       uint64
+	CurrentStateSize  uint64
+}
+
+type PruningMode string
+
+const (
+	FullNode    PruningMode = "full"     // Keep everything
+	PrunedNode  PruningMode = "pruned"   // Keep last 100K blocks
+	LightNode   PruningMode = "light"    // Keep only checkpoints
+	ArchiveNode PruningMode = "archive"  // Keep everything forever
+)
+
+type StateEntry struct {
+	Key         string
+	Value       []byte
+	BlockNumber uint64
+	Timestamp   time.Time
+	AccessCount uint64
+	Size        uint64
+}
+
+type StateCheckpoint struct {
+	BlockNumber uint64
+	StateRoot   string
+	StateSize   uint64
+	Timestamp   time.Time
+	TxCount     uint64
+	AccountCount uint64
+}
+
+func NewStatePruner(mode PruningMode) *StatePruner {
+	retention := uint64(100000) // Default: 100K blocks
+
+	switch mode {
+	case LightNode:
+		retention = 1000 // Only 1K blocks
+	case PrunedNode:
+		retention = 100000 // 100K blocks
+	case FullNode, ArchiveNode:
+		retention = 0 // Keep everything
+	}
+
+	return &StatePruner{
+		StateDB:          make(map[string]*StateEntry),
+		Checkpoints:      make(map[uint64]*StateCheckpoint),
+		PruningMode:      mode,
+		RetentionBlocks:  retention,
+		ArchiveNodes:     make([]string, 0),
+		TotalPruned:      0,
+		CurrentStateSize: 0,
+	}
+}
+
+// Add state entry
+func (sp *StatePruner) SetState(key string, value []byte, blockNumber uint64) {
+	entry := &StateEntry{
+		Key:         key,
+		Value:       value,
+		BlockNumber: blockNumber,
+		Timestamp:   time.Now(),
+		AccessCount: 0,
+		Size:        uint64(len(value)),
+	}
+
+	sp.StateDB[key] = entry
+	sp.CurrentStateSize += entry.Size
+}
+
+// Get state entry
+func (sp *StatePruner) GetState(key string) ([]byte, bool) {
+	entry, exists := sp.StateDB[key]
+	if !exists {
+		return nil, false
+	}
+
+	entry.AccessCount++
+	return entry.Value, true
+}
+
+// Prune old state data
+func (sp *StatePruner) PruneState(currentBlock uint64) (uint64, error) {
+	if sp.PruningMode == FullNode || sp.PruningMode == ArchiveNode {
+		return 0, nil // Don't prune
+	}
+
+	if sp.RetentionBlocks == 0 {
+		return 0, nil
+	}
+
+	pruneThreshold := currentBlock - sp.RetentionBlocks
+	prunedCount := uint64(0)
+	prunedSize := uint64(0)
+
+	for key, entry := range sp.StateDB {
+		// Keep recent state
+		if entry.BlockNumber > pruneThreshold {
+			continue
+		}
+
+		// Keep frequently accessed state
+		if entry.AccessCount > 100 {
+			continue
+		}
+
+		// Prune old, unused state
+		prunedSize += entry.Size
+		delete(sp.StateDB, key)
+		prunedCount++
+	}
+
+	sp.TotalPruned += prunedSize
+	sp.CurrentStateSize -= prunedSize
+
+	fmt.Printf("🗜️ State pruned: %d entries (%.2f MB) | Threshold: block %d\n",
+		prunedCount, float64(prunedSize)/(1024*1024), pruneThreshold)
+
+	return prunedSize, nil
+}
+
+// Create state checkpoint
+func (sp *StatePruner) CreateCheckpoint(
+	blockNumber uint64,
+	stateRoot string,
+	txCount uint64,
+) {
+	checkpoint := &StateCheckpoint{
+		BlockNumber:  blockNumber,
+		StateRoot:    stateRoot,
+		StateSize:    sp.CurrentStateSize,
+		Timestamp:    time.Now(),
+		TxCount:      txCount,
+		AccountCount: uint64(len(sp.StateDB)),
+	}
+
+	sp. Checkpoints[blockNumber] = checkpoint
+
+	fmt.Printf("📸 Checkpoint created: block %d | State: %. 2f MB | Accounts: %d\n",
+		blockNumber, float64(sp. CurrentStateSize)/(1024*1024), checkpoint.AccountCount)
+}
+
+// Restore from checkpoint
+func (sp *StatePruner) RestoreFromCheckpoint(blockNumber uint64) error {
+	checkpoint, exists := sp.Checkpoints[blockNumber]
+	if ! exists {
+		return fmt. Errorf("checkpoint not found for block %d", blockNumber)
+	}
+
+	// Clear current state
+	sp.StateDB = make(map[string]*StateEntry)
+
+	// Load state from checkpoint (simplified)
+	// Production: Load from disk/database
+	sp.CurrentStateSize = checkpoint.StateSize
+
+	fmt.Printf("♻️ Restored from checkpoint: block %d (%.2f MB)\n",
+		blockNumber, float64(checkpoint.StateSize)/(1024*1024))
+
+	return nil
+}
+
+// Archive old checkpoints to archive nodes
+func (sp *StatePruner) ArchiveCheckpoint(blockNumber uint64, archiveNode string) error {
+	checkpoint, exists := sp.Checkpoints[blockNumber]
+	if ! exists {
+		return fmt. Errorf("checkpoint not found")
+	}
+
+	// Send to archive node (simplified)
+	sp.ArchiveNodes = append(sp.ArchiveNodes, archiveNode)
+
+	fmt.Printf("📦 Checkpoint archived: block %d → %s\n", blockNumber, archiveNode)
+
+	return nil
+}
+
+// Compress state data
+func (sp *StatePruner) CompressState() uint64 {
+	originalSize := sp.CurrentStateSize
+
+	// Simulate compression (production: actual compression)
+	compressionRatio := 0.6 // 40% size reduction
+	compressedSize := uint64(float64(originalSize) * compressionRatio)
+
+	saved := originalSize - compressedSize
+	sp.CurrentStateSize = compressedSize
+
+	fmt.Printf("🗜️ State compressed: %.2f MB → %.2f MB (saved %. 2f MB)\n",
+		float64(originalSize)/(1024*1024),
+		float64(compressedSize)/(1024*1024),
+		float64(saved)/(1024*1024))
+
+	return saved
+}
+
+// Get pruning stats
+func (sp *StatePruner) GetStats() map[string]interface{} {
+	return map[string]interface{}{
+		"pruning_mode":       sp.PruningMode,
+		"current_state_mb":   float64(sp.CurrentStateSize) / (1024 * 1024),
+		"total_pruned_mb":    float64(sp.TotalPruned) / (1024 * 1024),
+		"retention_blocks":   sp.RetentionBlocks,
+		"state_entries":      len(sp.StateDB),
+		"checkpoints":        len(sp.Checkpoints),
+		"archive_nodes":      len(sp. ArchiveNodes),
+	}
+}
+
+// Estimate disk savings
+func (sp *StatePruner) EstimateSavings(blocks uint64) map[string]interface{} {
+	avgStatePerBlock := uint64(100 * 1024) // 100KB per block
+
+	fullNodeSize := blocks * avgStatePerBlock
+	prunedNodeSize := sp.RetentionBlocks * avgStatePerBlock
+	lightNodeSize := uint64(len(sp. Checkpoints)) * 1024 // 1KB per checkpoint
+
+	return map[string]interface{}{
+		"full_node_gb":   float64(fullNodeSize) / (1024 * 1024 * 1024),
+		"pruned_node_gb": float64(prunedNodeSize) / (1024 * 1024 * 1024),
+		"light_node_gb":  float64(lightNodeSize) / (1024 * 1024 * 1024),
+		"savings_gb":     float64(fullNodeSize-prunedNodeSize) / (1024 * 1024 * 1024),
+	}
+}
