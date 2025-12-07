@@ -1,0 +1,47 @@
+# Binaries
+*.exe
+*.dll
+*.so
+*.dylib
+nusa-node
+nusa-cli
+
+# Go
+*. test
+*.out
+vendor/
+
+# Rust
+target/
+Cargo.lock
+
+# Python
+__pycache__/
+*.py[cod]
+*$py. class
+*.so
+. Python
+env/
+venv/
+. env
+
+# IDEs
+.vscode/
+. idea/
+*. swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Data
+data/
+*. db
+*.log
+
+# Secrets
+*. key
+*.pem
+config.local. yaml
