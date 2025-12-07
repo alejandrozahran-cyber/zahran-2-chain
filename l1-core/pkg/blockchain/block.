@@ -1,0 +1,43 @@
+package blockchain
+
+import (
+	"crypto/sha256"
+	"encoding/json"
+	"fmt"
+	"time"
+)
+
+type Block struct {
+	Index        uint64        `json:"index"`
+	Timestamp    int64         `json:"timestamp"`
+	Transactions []Transaction `json:"transactions"`
+	PrevHash     string        `json:"prev_hash"`
+	Hash         string        `json:"hash"`
+	Nonce        uint64        `json:"nonce"`
+	Validator    string        `json:"validator"`
+	PVCScore     float64       `json:"pvc_score"`
+}
+
+func NewBlock(index uint64, transactions []Transaction, prevHash string, validator string, pvcScore float64) *Block {
+	block := &Block{
+		Index:        index,
+		Timestamp:    time.Now(). Unix(),
+		Transactions: transactions,
+		PrevHash:     prevHash,
+		Validator:    validator,
+		PVCScore:     pvcScore,
+		Nonce:        0,
+	}
+	block.Hash = block.CalculateHash()
+	return block
+}
+
+func (b *Block) CalculateHash() string {
+	data, _ := json.Marshal(b)
+	hash := sha256.Sum256(data)
+	return fmt.Sprintf("%x", hash)
+}
+
+func CreateGenesisBlock() *Block {
+	return NewBlock(0, []Transaction{}, "0", "genesis", 100.0)
+}
