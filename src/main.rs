@@ -56,3 +56,7 @@ async fn main() {
 
     server.run().await;
 }
+
+    // Initialize WASM VM
+    let wasm_vm = Arc::new(tokio::sync::Mutex::new(vm::WasmVM::new(10_000_000)));
+    println!("✅ WASM VM initialized");

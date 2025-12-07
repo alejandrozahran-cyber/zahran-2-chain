@@ -1,0 +1,35 @@
+version: '3.8'
+services:
+  postgres:
+    image: postgres:15-alpine
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: nusa_chain
+      POSTGRES_USER: nusa
+      POSTGRES_PASSWORD: nusa123
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  nusa-node:
+    build: .
+    ports:
+      - "8545:8545"
+    depends_on:
+      - postgres
+
+  grafana:
+    image: grafana/grafana
+    ports:
+      - "3001:3000"
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: admin
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./docker/grafana/provisioning:/etc/grafana/provisioning
+    depends_on:
+      - nusa-node
+
+volumes:
+  pgdata:
+  grafana_data:
